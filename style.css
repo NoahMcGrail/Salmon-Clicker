@@ -1,0 +1,13 @@
+body {
+    all: unset;
+    color: white;
+    background-color: black;
+    margin: none;
+    padding: none;
+    border: none;
+    position: absolute;
+}
+
+.gameHolder {
+    background-color: white;
+}
