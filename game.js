@@ -2166,15 +2166,15 @@ function setResolution(){
 
     gameHolder.style.position = "absolute";
     
-    let modWidth = window.innerWidth / DESIRED_WIDTH;
-    let modHeight = window.innerHeight / DESIRED_HEIGHT;
+    let modWidth = window.innerWidth / DESIRED_WIDTH * (0.975);
+    let modHeight = window.innerHeight / DESIRED_HEIGHT * (0.975);
     
     if(modWidth > modHeight){
-        gameHolder.style.width = window.innerHeight * (1920/1080);
-        gameHolder.style.height = window.innerHeight;
+        gameHolder.style.width = window.innerHeight * (1920/1080) * (0.975);
+        gameHolder.style.height = window.innerHeight * (0.975);
     } else {
-        gameHolder.style.width = window.innerWidth;
-        gameHolder.style.height = window.innerWidth * (1080/1920);
+        gameHolder.style.width = window.innerWidth * (0.975);
+        gameHolder.style.height = window.innerWidth * (1080/1920) * (0.975);
     }
 }
 
