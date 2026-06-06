@@ -1,5 +1,7 @@
 let gameHolder = document.getElementById("gameHolder");
 
+let relativeDimensions = [];
+
 let canvasObjects = [];
 
 let currentStage = "";
@@ -51,7 +53,22 @@ function main(){
     progressIntroCinematic(0);
     
     gameHolder.addEventListener('click', gameClick);
+    window.addEventListener('resize', resetResizeWindow);
     setTimer(decayFadeMessage, 17);
+}
+
+// Resets the timer that Resizes the elements after some time
+function resetResizeWindow(){
+    stopTimer(resizeWindow);
+    setTimer(resizeWindow, 50);
+}
+
+// Resizes the elements after some time
+function resizeWindow(){
+    saveDimensionRatios();
+    setResolution();
+    loadDimensionRatios();
+    stopTimer(resizeWindow);
 }
 
 // Calls functions depending on what stage of the game the player is on
@@ -576,7 +593,7 @@ function initTimerPage(timer){
         
         let currentPriceLabel = new Text(("$" + Math.round(currentPrice)), EXTREME_PRICE_LABEL_FONT);
         
-        const CURRENT_PRICE_LABEL_Y = topLine.getY() - ((topLine.getY() - bottomLine.getY()) / 2) + (currentPriceLabel.getHeight() / 2);
+        const CURRENT_PRICE_LABEL_Y = topLine.getY1() - ((topLine.getY1() - bottomLine.getY1()) / 2) + (currentPriceLabel.getHeight() / 2);
         
         currentPriceLabel.setPosition(EXTREME_PRICE_LABEL_X, CURRENT_PRICE_LABEL_Y);
         currentPriceLabel.setId("currentPriceLabel");
@@ -585,7 +602,7 @@ function initTimerPage(timer){
         
         let maxPriceLabel = new Text(("$" + Math.round(max)), EXTREME_PRICE_LABEL_FONT);
         
-        const MAX_PRICE_LABEL_Y = topLine.getY() + (maxPriceLabel.getHeight() / 2);
+        const MAX_PRICE_LABEL_Y = topLine.getY1() + (maxPriceLabel.getHeight() / 2);
 
         maxPriceLabel.setPosition(EXTREME_PRICE_LABEL_X, MAX_PRICE_LABEL_Y);
         maxPriceLabel.setId("maxPriceLabel");
@@ -594,7 +611,7 @@ function initTimerPage(timer){
         
         let minPriceLabel = new Text(("$" + Math.round(min)), EXTREME_PRICE_LABEL_FONT);
         
-        const MIN_PRICE_LABEL_Y = bottomLine.getY() + (minPriceLabel.getHeight() / 2);
+        const MIN_PRICE_LABEL_Y = bottomLine.getY1() + (minPriceLabel.getHeight() / 2);
         
         minPriceLabel.setPosition(EXTREME_PRICE_LABEL_X, MIN_PRICE_LABEL_Y);
         minPriceLabel.setId("minPriceLabel");
@@ -603,7 +620,7 @@ function initTimerPage(timer){
         
         let numStocksLabel = new Text(("Stocks: " + numStocks), EXTREME_PRICE_LABEL_FONT);
         
-        const NUM_STOCKS_LABEL_Y = bottomLine.getY() - (((bottomLine.getY() - topLine.getY()) / 4) * 3);
+        const NUM_STOCKS_LABEL_Y = bottomLine.getY1() - (((bottomLine.getY1() - topLine.getY1()) / 4) * 3);
         const NUM_STOCKS_LABEL_X = TRADE_STOCK_X + TRADE_STOCK_WIDTH + (TRADE_STOCK_WIDTH / 2);
         
         numStocksLabel.setPosition(NUM_STOCKS_LABEL_X, NUM_STOCKS_LABEL_Y);
@@ -2165,20 +2182,101 @@ function setResolution(){
     const DESIRED_HEIGHT = 1080;
 
     gameHolder.style.position = "absolute";
+
+    let screenFillFactor = 0.995;
     
-    let modWidth = window.innerWidth / DESIRED_WIDTH * (0.975);
-    let modHeight = window.innerHeight / DESIRED_HEIGHT * (0.975);
+    let modWidth = window.innerWidth / DESIRED_WIDTH * (screenFillFactor);
+    let modHeight = window.innerHeight / DESIRED_HEIGHT * (screenFillFactor);
     
     if(modWidth > modHeight){
-        gameHolder.style.width = window.innerHeight * (1920/1080) * (0.975);
-        gameHolder.style.height = window.innerHeight * (0.975);
+        gameHolder.style.width = window.innerHeight * (1920/1080) * (screenFillFactor);
+        gameHolder.style.height = window.innerHeight * (screenFillFactor);
     } else {
-        gameHolder.style.width = window.innerWidth * (0.975);
-        gameHolder.style.height = window.innerWidth * (1080/1920) * (0.975);
+        gameHolder.style.width = window.innerWidth * (screenFillFactor);
+        gameHolder.style.height = window.innerWidth * (1080/1920) * (screenFillFactor);
     }
+
+    gameHolder.style.left = (window.innerWidth - gameHolder.offsetWidth) / 2;
+    gameHolder.style.top = (window.innerHeight - gameHolder.offsetHeight) / 2;
 }
 
 // Functions below are implemented to mimic codeHS image objects
+
+// Saves all element size and position ratios
+function saveDimensionRatios(){
+    relativeDimensions = [];
+    for(let i = 0; i < canvasObjects.length; i ++){
+        if(canvasObjects[i].getVisualType() == "Line"){
+            let relX1 = canvasObjects[i].getX1() / gameHolder.offsetWidth;
+            let relX2 = canvasObjects[i].getX2() / gameHolder.offsetWidth;
+            let relY1 = canvasObjects[i].getY1() / gameHolder.offsetHeight;
+            let relY2 = canvasObjects[i].getY2() / gameHolder.offsetHeight;
+            
+            relativeDimensions.push([relX1, relX2, relY1, relY2]);
+        } else if(canvasObjects[i].getVisualType() == "Text"){
+            let relFont = parseFloat(canvasObjects[i].getFont()) / gameHolder.offsetWidth;
+            let text = canvasObjects[i].getText();
+            
+            let relX = canvasObjects[i].getX() / gameHolder.offsetWidth;
+            let relY = canvasObjects[i].getAdjustedY() / gameHolder.offsetHeight;
+
+            relativeDimensions.push([relFont, relX, relY, text]);
+        } else {
+            let relX = canvasObjects[i].getX() / gameHolder.offsetWidth;
+            let relY = canvasObjects[i].getY() / gameHolder.offsetHeight;
+
+            let relWidth = canvasObjects[i].getWidth() / gameHolder.offsetWidth;
+            let relHeight = canvasObjects[i].getHeight() / gameHolder.offsetHeight;
+
+            relativeDimensions.push([relX, relY, relWidth, relHeight]);
+        }
+    }
+}
+
+// Resizes and repositions all elements
+function loadDimensionRatios(){
+    for(let i = 0; i < canvasObjects.length; i ++){
+        if(canvasObjects[i].getVisualType() == "Line"){
+            let relX1 = relativeDimensions[i][0];
+            let relX2 = relativeDimensions[i][1];
+            let relY1 = relativeDimensions[i][2];
+            let relY2 = relativeDimensions[i][3];
+            
+            let X1 = relX1 * gameHolder.offsetWidth;
+            let X2 = relX2 * gameHolder.offsetWidth;
+            let Y1 = relY1 * gameHolder.offsetHeight;
+            let Y2 = relY2 * gameHolder.offsetHeight;
+
+            canvasObjects[i].setPosition(X1, X2, Y1, Y2);
+        } else if(canvasObjects[i].getVisualType() == "Text"){
+            let relFont = relativeDimensions[i][0];
+            let relX = relativeDimensions[i][1];
+            let relY = relativeDimensions[i][2];
+
+            let font = relFont * gameHolder.offsetWidth;
+            let text = relativeDimensions[i][3];
+            let x = relX * gameHolder.offsetWidth;
+            let y = relY * gameHolder.offsetHeight;
+
+            canvasObjects[i].setFont(font + "pt Arial");
+            canvasObjects[i].setText(text)
+            canvasObjects[i].setPosition(x, y);
+        } else {
+            let relX = relativeDimensions[i][0];
+            let relY = relativeDimensions[i][1];
+            let relWidth = relativeDimensions[i][2];
+            let relHeight = relativeDimensions[i][3];
+
+            let x = relX * gameHolder.offsetWidth;
+            let y = relY * gameHolder.offsetHeight;
+            let width = relWidth * gameHolder.offsetWidth;
+            let height = relHeight * gameHolder.offsetHeight;
+
+            canvasObjects[i].setPosition(x, y);
+            canvasObjects[i].setSize(width, height);
+        }
+    }
+}   
 
 // Object that is an image
 function WebImage(src){
@@ -2190,6 +2288,7 @@ function WebImage(src){
     image.style.margin = 0;
     image.style.transform = "rotate(0deg)";
     image.draggable = false;
+    image.style.userSelect = "none";
 
     let width = 0;
     let height = 0;
@@ -2261,6 +2360,10 @@ function WebImage(src){
     this.setImage = function(src){
         image.src = src;
     }
+
+    this.getVisualType = function(){
+        return "WebImage";
+    }
 }
 
 // Object that is a rectangle
@@ -2275,6 +2378,7 @@ function Rectangle(width, height){
     image.style.height = height;
     image.style.margin = 0;
     image.draggable = false;
+    image.style.userSelect = "none";
 
     this.setSize = function(width, height){
         image.style.width = width;
@@ -2329,6 +2433,10 @@ function Rectangle(width, height){
     this.getId = function(){
         return image.id;
     }
+
+    this.getVisualType = function(){
+        return "Rectangle";
+    }
 }
 
 // Object that is a line
@@ -2351,6 +2459,7 @@ function Line(x1, y1, x2, y2, color = "white", thickness = 1) {
 
     line.style.transformOrigin = "0 0";
     line.style.transform = `rotate(${angle}deg)`;
+    line.style.userSelect = "none";
 
     this.setColor = function(color){
         line.style.backgroundColor = color;
@@ -2369,8 +2478,38 @@ function Line(x1, y1, x2, y2, color = "white", thickness = 1) {
         return line;
     }
 
-    this.getY = function(){
+    this.getY1 = function(){
         return parseFloat(line.style.top);
+    }
+
+    this.getY2 = function(){
+        return parseFloat(line.style.top) + dy;
+    }
+
+    this.getX1 = function(){
+        return parseFloat(line.style.left);
+    }
+
+    this.getX2 = function(){
+        return parseFloat(line.style.left) + dx;
+    }
+
+    this.getVisualType = function(){
+        return "Line";
+    }
+
+    this.setPosition = function(x1, x2, y1, y2){
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        line.style.left = x1 + "px";
+        line.style.top = y1 + "px";
+        line.style.width = length + "px";
+
+        line.style.transformOrigin = "0 0";
+        line.style.transform = `rotate(${angle}deg)`;
     }
 }
 
@@ -2396,6 +2535,7 @@ function Text(text, font){
     image.style.position = "absolute";
     image.style.margin = 0;
     image.draggable = false;
+    image.style.userSelect = "none";
 
     let width = 0;
     let height = 0;
@@ -2404,16 +2544,16 @@ function Text(text, font){
     this.height = measureText(text, fontFamily, fontSize).height;
 
     this.getWidth = function(){
-        return this.width;
+        return measureText(text, fontFamily, fontSize).width;
     }
 
     this.getHeight = function(){
-        return this.height;
+        return measureText(text, fontFamily, fontSize).height;
     }
 
     this.setPosition = function(x, y){
         image.style.left = x;
-        image.style.top = y - (this.height);
+        image.style.top = y - (this.getHeight());
     }
 
     this.setColor = function(color){
@@ -2436,6 +2576,10 @@ function Text(text, font){
         return parseFloat(image.style.top);
     }
 
+    this.getAdjustedY = function(){
+        return parseFloat(image.style.top) + this.getHeight();
+    }
+
     this.setText = function(text){
         image.innerHTML = text;
         this.width = measureText(text, fontFamily, fontSize).width;
@@ -2449,6 +2593,10 @@ function Text(text, font){
 
     this.getId = function(){
         return image.id;
+    }
+
+    this.getText = function(){
+        return image.innerHTML;
     }
 
     this.move = function(x, y){
@@ -2486,6 +2634,10 @@ function Text(text, font){
 
     this.moveToTop = function(){
         image.style.zIndex = 5;
+    }
+
+    this.getVisualType = function(){
+        return "Text";
     }
 }
 
